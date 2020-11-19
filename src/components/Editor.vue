@@ -46,15 +46,22 @@
         <th>zh-CN</th>
         <th>ja-JP</th>
         <th>en-US</th>
+        <th>pic zh-CN</th>
+        <th>pic ja-JP</th>
+        <th>pic en-US</th>
       </tr>
-      <template v-for="(item, index) in data.voices" :key="item.name">
+      <template v-for="(item, index) in data.voices" :key="index">
         <tr>
           <td>{{ data.voices.length - index }}</td>
           <td>
             <input type="text" v-model="item.name" />
           </td>
           <td>
-            <input type="text" v-model="item.path" />
+            <input
+              type="text"
+              v-model="item.path"
+              @blur.prevent="checkVoice(item.path)"
+            />
           </td>
           <td>
             <edit-select :name="item.name" :category="item.category" />
@@ -68,6 +75,27 @@
           <td>
             <input type="text" v-model="item.translate['en-US']" />
           </td>
+          <td>
+            <input
+              type="text"
+              v-model="item.usePicture['zh-CN']"
+              @blur.prevent="checkPic(item.usePicture['zh-CN'])"
+            />
+          </td>
+          <td>
+            <input
+              type="text"
+              v-model="item.usePicture['ja-JP']"
+              @blur.prevent="checkPic(item.usePicture['zh-CN'])"
+            />
+          </td>
+          <td>
+            <input
+              type="text"
+              v-model="item.usePicture['en-US']"
+              @blur.prevent="checkPic(item.usePicture['zh-CN'])"
+            />
+          </td>
         </tr>
       </template>
     </table>
@@ -75,7 +103,7 @@
 </template>
 
 <script>
-import { ref, provide, computed, watch } from 'vue'
+import { ref, reactive, provide, computed, watch } from 'vue'
 import EditSelect from './EditSelect.vue'
 
 export default {
@@ -86,7 +114,7 @@ export default {
     const inputShow = ref(true)
 
     const jsonData = ref('')
-    const data = ref({
+    const data = reactive({
       category: [],
       voices: []
     })
@@ -95,10 +123,15 @@ export default {
     const check = () => {
       try {
         const VoiceList = JSON.parse(jsonData.value)
-        data.value = {
-          category: VoiceList.category.reverse(),
-          voices: VoiceList.voices.reverse()
-        }
+        const voices = []
+        VoiceList.voices.forEach(item => {
+          if (!item.usePicture) {
+            item.usePicture = {}
+          }
+          voices.push(item)
+        })
+        data.category = VoiceList.category.reverse()
+        data.voices = VoiceList.voices.reverse()
         inputShow.value = false
       } catch {
         console.error('校验失败')
@@ -115,50 +148,61 @@ export default {
 
     const add = () => {
       if (showCategory.value) {
-        data.value.category.unshift({
+        data.category.unshift({
           name: null,
-          translate: {
-            'zh-CN': null,
-            'ja-JP': null
-          }
+          translate: {}
         })
       } else {
-        data.value.voices.unshift({
+        data.voices.unshift({
           name: null,
           path: null,
-          translate: {
-            'zh-CN': null,
-            'ja-JP': null
-          },
+          translate: {},
+          usePicture: {},
           category: null
         })
       }
     }
 
     // 需要定义中间变量才能监听到引用的变化值
-    const tempData = computed(() => JSON.parse(JSON.stringify(data.value.category)))
+    const tempData = computed(() => JSON.parse(JSON.stringify(data.category)))
 
     watch(tempData, (newVal, oldVal) => {
-      let oldCategory = null
-      let newCategory = null
-      for (const i in newVal) {
-        const oldIndex = newVal.length - oldVal.length + Number(i)
-        if (oldVal[oldIndex] && newVal[i].name !== oldVal[oldIndex].name) {
-          oldCategory = oldVal[oldIndex].name
-          newCategory = newVal[i].name
-          break
+      if (newVal.length === oldVal.length) {
+        let oldCategory = null
+        let newCategory = null
+        for (const i in newVal) {
+          if (newVal[i].name !== oldVal[i].name) {
+            oldCategory = oldVal[i].name
+            newCategory = newVal[i].name
+            break
+          }
         }
-      }
-      for (const j in data.value.voices) {
-        if (data.value.voices[j].category === oldCategory) {
-          data.value.voices[j].category = newCategory
+        for (const j in data.voices) {
+          if (data.voices[j].category === oldCategory) {
+            data.voices[j].category = newCategory
+          }
         }
       }
     })
 
     // 下载JSON文件
     const dlJson = () => {
-      const json = JSON.stringify(data.value, null, 2)
+      const category = []
+      const voices = []
+      for (const i in data.category) {
+        if (data.category[i].name) {
+          category.push(data.category[i])
+        }
+      }
+      for (const i in data.voices) {
+        if (data.voices[i].name) {
+          voices.push(data.voices[i])
+        }
+      }
+      const json = JSON.stringify({
+        category: category.reverse(),
+        voices: voices.reverse()
+      }, null, 2)
 
       jsonData.value = json
       inputShow.value = true
@@ -176,6 +220,17 @@ export default {
       // document.body.removeChild(eleLink)
     }
 
+    const checkPic = (path) => {
+      if (path && !(/\.(?:jpg|png|gif)$/.test(path))) {
+        alert(`${path}格式不是正确的文件格式`)
+      }
+    }
+    const checkVoice = (path) => {
+      if (path && !(/\.(?:mp3|wav)$/.test(path))) {
+        alert(`${path}格式不是正确的文件格式`)
+      }
+    }
+
     return {
       inputShow,
       jsonData,
@@ -184,40 +239,48 @@ export default {
       showCategory,
       changeShow,
       add,
-      dlJson
+      dlJson,
+      checkPic,
+      checkVoice
     }
   }
 }
 </script>
 
 <style lang="stylus" scoped>
-table
-  max-width 100%
-
-  // th
-  //   position sticky
-  //   top 35px
-  //   padding 5px
-  //   background #fff
-
-  td
-    text-align center
-
 .input
   display flex
   flex-direction column
   width 100vw
   height 100vh
+
   textarea
     flex 1
     margin 10px 10px 0 10px
+
   button
     margin 10px
-
 
 .editor
   margin 0 10px
 
+  table
+    padding-top 30px
+
+    th
+      position sticky
+      top 35px
+      padding 5px 5px 10px 5px
+      background #fff
+
+    td
+      text-align center
+
   .header
-    margin 5px 0 5px 5px
+    position fixed
+    top 0
+    left 0
+    width 100%
+    padding 10px
+    background #fff
 </style>

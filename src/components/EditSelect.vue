@@ -29,9 +29,9 @@ export default {
     const select = ref(props.category)
 
     const selectChange = () => {
-      for (const i in data.value.voices) {
-        if (data.value.voices[i].name === props.name) {
-          data.value.voices[i].category = select.value
+      for (const i in data.voices) {
+        if (data.voices[i].name === props.name) {
+          data.voices[i].category = select.value
           break
         }
       }
