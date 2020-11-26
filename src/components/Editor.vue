@@ -19,7 +19,7 @@
         <th>ja-JP</th>
         <th>en-US</th>
       </tr>
-      <template v-for="(item, index) in data.category" :key="index">
+      <template v-for="(item, index) in data.category" :key="data.category.length - index">
         <tr>
           <td>{{ data.category.length - index }}</td>
           <td>
@@ -46,11 +46,14 @@
         <th>zh-CN</th>
         <th>ja-JP</th>
         <th>en-US</th>
+        <th>title</th>
+        <th>time</th>
+        <th>url</th>
         <th>pic zh-CN</th>
         <th>pic ja-JP</th>
         <th>pic en-US</th>
       </tr>
-      <template v-for="(item, index) in data.voices" :key="index">
+      <template v-for="(item, index) in data.voices" :key="data.voices.length - index">
         <tr>
           <td>{{ data.voices.length - index }}</td>
           <td>
@@ -74,6 +77,15 @@
           </td>
           <td>
             <input type="text" v-model="item.translate['en-US']" />
+          </td>
+          <td>
+            <input type="text" v-model="item.mark['title']" />
+          </td>
+          <td>
+            <input type="text" v-model="item.mark['time']" />
+          </td>
+          <td>
+            <input type="text" v-model="item.mark['url']" />
           </td>
           <td>
             <input
@@ -128,6 +140,9 @@ export default {
           if (!item.usePicture) {
             item.usePicture = {}
           }
+          if (!item.mark) {
+            item.mark = {}
+          }
           voices.push(item)
         })
         data.category = VoiceList.category.reverse()
@@ -158,7 +173,8 @@ export default {
           path: null,
           translate: {},
           usePicture: {},
-          category: null
+          category: null,
+          mark: {}
         })
       }
     }
